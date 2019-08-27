@@ -60,6 +60,23 @@ bitflags! {
     pub struct KernelFeatures: u8 {
         /// Coinbase transaction
         const COINBASE_KERNEL = 1u8;
+        /// Clacks transaction
+        const CLACKS_KERNEL = 2u8;
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Deserialize, Serialize, Eq)]
+pub struct ClacksInfo {
+    pub commitments: Vec<Commitment>,
+    pub kernels: Vec<TransactionKernel>,
+}
+
+impl Default for ClacksInfo {
+    fn default() -> Self {
+        ClacksInfo {
+            commitments: Vec::new(),
+            kernels: Vec::new(),
+        }
     }
 }
 
@@ -71,6 +88,8 @@ pub struct OutputFeatures {
     /// the maturity of the specific UTXO. This is the min lock height at which an UTXO can be spend. Coinbase UTXO
     /// require a min maturity of the Coinbase_lock_height, this should be checked on receiving new blocks.
     pub maturity: u64,
+    /// This is the clocks layer option stuff, should be none for non clacks utxos
+    pub clacks_info: Option<ClacksInfo>,
 }
 
 impl OutputFeatures {
@@ -84,6 +103,7 @@ impl OutputFeatures {
         OutputFeatures {
             flags: OutputFlags::COINBASE_OUTPUT,
             maturity: consensus_rules.coinbase_lock_height() + current_block_height,
+            clacks_info: None,
         }
     }
 }
@@ -93,6 +113,7 @@ impl Default for OutputFeatures {
         OutputFeatures {
             flags: OutputFlags::empty(),
             maturity: 0,
+            clacks_info: None,
         }
     }
 }
@@ -114,6 +135,8 @@ bitflags! {
     pub struct OutputFlags: u8 {
         /// Output is a coinbase output, must not be spent until maturity
         const COINBASE_OUTPUT = 0b0000_0001;
+        /// Output is clacks layer transaction containing clacks layer info
+        const CLACKS_OUTPUT = 0b0000_0010;
     }
 }
 
