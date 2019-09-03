@@ -33,7 +33,7 @@ use crate::{
     consensus::ConsensusRules,
     fee::Fee,
     transaction_protocol::{build_challenge, TransactionMetadata},
-    types::{HashDigest, RangeProof, RangeProofService},
+    types::{HashDigest, RangeProof, RangeProofService, MessageHash},
 };
 use derive_error::Error;
 use digest::Input;
@@ -370,6 +370,8 @@ pub struct TransactionKernel {
     /// The signature proving the excess is a valid public key, which signs
     /// the transaction fee.
     pub excess_sig: Signature,
+    /// This is an optional field used by the clacks for the commitment to be added
+    pub bo_commitment: Option<MessageHash>,
 }
 
 /// A version of Transaction kernel with optional fields. This struct is only used in constructing transaction kernels
@@ -428,6 +430,7 @@ impl KernelBuilder {
             lock_height: self.lock_height,
             excess: self.excess.unwrap(),
             excess_sig: self.excess_sig.unwrap(),
+            bo_commitment: None,
         })
     }
 }
