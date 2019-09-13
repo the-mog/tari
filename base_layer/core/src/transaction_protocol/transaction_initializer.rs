@@ -283,6 +283,7 @@ impl SenderTransactionInitializer {
             metadata: TransactionMetadata {
                 fee: total_fee,
                 lock_height: self.lock_height.unwrap(),
+                clacks_commitments: None,
             },
             inputs: self.inputs,
             outputs,

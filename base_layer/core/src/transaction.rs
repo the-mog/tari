@@ -68,14 +68,14 @@ bitflags! {
 #[derive(Debug, Clone, Hash, PartialEq, Deserialize, Serialize, Eq)]
 pub struct ClacksInfo {
     pub commitments: Vec<Commitment>,
-    pub kernels: Vec<TransactionKernel>,
+    //pub kernels: Vec<TransactionKernel>,
 }
 
 impl Default for ClacksInfo {
     fn default() -> Self {
         ClacksInfo {
             commitments: Vec::new(),
-            kernels: Vec::new(),
+            //kernels: Vec::new(),
         }
     }
 }
@@ -451,9 +451,17 @@ impl TransactionKernel {
     pub fn verify_signature(&self) -> Result<(), TransactionError> {
         let excess = self.excess.as_public_key();
         let r = self.excess_sig.get_public_nonce();
+        let clacks_info: Option<[u8;32]> =  if self.bo_commitment.is_some(){
+            let mut a: [u8; 32] = Default::default();
+            a.copy_from_slice(&self.bo_commitment.clone().unwrap());
+            Some(a)
+        } else{
+            None
+        };
         let m = TransactionMetadata {
             lock_height: self.lock_height,
             fee: self.fee,
+            clacks_commitments: clacks_info,
         };
         let c = build_challenge(r, &m);
         if self.excess_sig.verify_challenge(excess, &c) {
