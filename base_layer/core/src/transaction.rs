@@ -68,14 +68,14 @@ bitflags! {
 #[derive(Debug, Clone, Hash, PartialEq, Deserialize, Serialize, Eq)]
 pub struct ClacksInfo {
     pub commitments: Vec<Commitment>,
-    //pub kernels: Vec<TransactionKernel>,
+    pub kernels: Vec<TransactionKernel>,
 }
 
 impl Default for ClacksInfo {
     fn default() -> Self {
         ClacksInfo {
             commitments: Vec::new(),
-            //kernels: Vec::new(),
+            kernels: Vec::new(),
         }
     }
 }
@@ -90,6 +90,7 @@ pub struct OutputFeatures {
     pub maturity: u64,
     /// This is the clocks layer option stuff, should be none for non clacks utxos
     pub clacks_info: Option<ClacksInfo>,
+    pub linked_commitment : Option<Commitment>,
 }
 
 impl OutputFeatures {
@@ -104,6 +105,7 @@ impl OutputFeatures {
             flags: OutputFlags::COINBASE_OUTPUT,
             maturity: consensus_rules.coinbase_lock_height() + current_block_height,
             clacks_info: None,
+            linked_commitment : None,
         }
     }
 }
@@ -114,6 +116,7 @@ impl Default for OutputFeatures {
             flags: OutputFlags::empty(),
             maturity: 0,
             clacks_info: None,
+            linked_commitment : None,
         }
     }
 }
@@ -137,6 +140,9 @@ bitflags! {
         const COINBASE_OUTPUT = 0b0000_0001;
         /// Output is clacks layer transaction containing clacks layer info
         const CLACKS_OUTPUT = 0b0000_0010;
+        /// Output is linked to another output,only that output can spend it
+        const LINKED_OUTPUT = 0b0000_0100;
+
     }
 }
 
@@ -354,7 +360,7 @@ impl Default for TransactionOutput {
 /// [Mimblewimble TLU post](https://tlu.tarilabs.com/protocols/mimblewimble-1/sources/PITCHME.link.html?highlight=mimblewimble#mimblewimble).
 /// The kernel also tracks other transaction metadata, such as the lock height for the transaction (i.e. the earliest
 /// this transaction can be mined) and the transaction fee, in cleartext.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TransactionKernel {
     /// Options for a kernel's structure or use
     pub features: KernelFeatures,
@@ -371,7 +377,9 @@ pub struct TransactionKernel {
     /// the transaction fee.
     pub excess_sig: Signature,
     /// This is an optional field used by the clacks for the commitment to be added
-    pub bo_commitment: Option<MessageHash>,
+    pub contract_field: Option<MessageHash>,
+    ///This is the hash of the kernel this kernel is linked to. 
+    pub linked_kernel : Option<MessageHash>,
 }
 
 /// A version of Transaction kernel with optional fields. This struct is only used in constructing transaction kernels
@@ -430,7 +438,8 @@ impl KernelBuilder {
             lock_height: self.lock_height,
             excess: self.excess.unwrap(),
             excess_sig: self.excess_sig.unwrap(),
-            bo_commitment: None,
+            contract_field: None,
+            linked_kernel : None,
         })
     }
 }
@@ -451,9 +460,9 @@ impl TransactionKernel {
     pub fn verify_signature(&self) -> Result<(), TransactionError> {
         let excess = self.excess.as_public_key();
         let r = self.excess_sig.get_public_nonce();
-        let clacks_info: Option<[u8;32]> =  if self.bo_commitment.is_some(){
+        let clacks_info: Option<[u8;32]> =  if self.contract_field.is_some(){
             let mut a: [u8; 32] = Default::default();
-            a.copy_from_slice(&self.bo_commitment.clone().unwrap());
+            a.copy_from_slice(&self.contract_field.clone().unwrap());
             Some(a)
         } else{
             None
