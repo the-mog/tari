@@ -33,7 +33,7 @@ use crate::{
     consensus::ConsensusRules,
     fee::Fee,
     transaction_protocol::{build_challenge, TransactionMetadata},
-    types::{HashDigest, RangeProof, RangeProofService, MessageHash},
+    types::{HashDigest, MessageHash, RangeProof, RangeProofService},
 };
 use derive_error::Error;
 use digest::Input;
@@ -67,14 +67,16 @@ bitflags! {
 
 #[derive(Debug, Clone, Hash, PartialEq, Deserialize, Serialize, Eq)]
 pub struct ClacksInfo {
-    pub commitments: Vec<Commitment>,
+    pub commitments_left: Vec<Commitment>,
+    pub commitments_out: Vec<Commitment>,
     pub kernels: Vec<TransactionKernel>,
 }
 
 impl Default for ClacksInfo {
     fn default() -> Self {
         ClacksInfo {
-            commitments: Vec::new(),
+            commitments_left: Vec::new(),
+            commitments_out: Vec::new(),
             kernels: Vec::new(),
         }
     }
@@ -90,7 +92,7 @@ pub struct OutputFeatures {
     pub maturity: u64,
     /// This is the clocks layer option stuff, should be none for non clacks utxos
     pub clacks_info: Option<ClacksInfo>,
-    pub linked_commitment : Option<Commitment>,
+    pub linked_commitment: Option<Commitment>,
 }
 
 impl OutputFeatures {
@@ -105,16 +107,16 @@ impl OutputFeatures {
             flags: OutputFlags::COINBASE_OUTPUT,
             maturity: consensus_rules.coinbase_lock_height() + current_block_height,
             clacks_info: None,
-            linked_commitment : None,
+            linked_commitment: None,
         }
     }
 
-    pub fn create_with_linked_commitment(commitment : &Commitment) -> OutputFeatures{
+    pub fn create_with_linked_commitment(commitment: &Commitment) -> OutputFeatures {
         OutputFeatures {
             flags: OutputFlags::LINKED_OUTPUT,
             maturity: 0,
             clacks_info: None,
-            linked_commitment : Some(commitment.clone()),
+            linked_commitment: Some(commitment.clone()),
         }
     }
 }
@@ -125,7 +127,7 @@ impl Default for OutputFeatures {
             flags: OutputFlags::empty(),
             maturity: 0,
             clacks_info: None,
-            linked_commitment : None,
+            linked_commitment: None,
         }
     }
 }
@@ -387,8 +389,8 @@ pub struct TransactionKernel {
     pub excess_sig: Signature,
     /// This is an optional field used by the clacks for the commitment to be added
     pub contract_field: Option<MessageHash>,
-    ///This is the hash of the kernel this kernel is linked to. 
-    pub linked_kernel : Option<MessageHash>,
+    /// This is the hash of the kernel this kernel is linked to.
+    pub linked_kernel: Option<MessageHash>,
 }
 
 /// A version of Transaction kernel with optional fields. This struct is only used in constructing transaction kernels
@@ -448,7 +450,7 @@ impl KernelBuilder {
             excess: self.excess.unwrap(),
             excess_sig: self.excess_sig.unwrap(),
             contract_field: None,
-            linked_kernel : None,
+            linked_kernel: None,
         })
     }
 }
@@ -469,11 +471,11 @@ impl TransactionKernel {
     pub fn verify_signature(&self) -> Result<(), TransactionError> {
         let excess = self.excess.as_public_key();
         let r = self.excess_sig.get_public_nonce();
-        let clacks_info: Option<[u8;32]> =  if self.contract_field.is_some(){
+        let clacks_info: Option<[u8; 32]> = if self.contract_field.is_some() {
             let mut a: [u8; 32] = Default::default();
             a.copy_from_slice(&self.contract_field.clone().unwrap());
             Some(a)
-        } else{
+        } else {
             None
         };
         let m = TransactionMetadata {

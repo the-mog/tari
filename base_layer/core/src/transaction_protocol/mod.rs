@@ -102,7 +102,7 @@ pub struct TransactionMetadata {
     /// The earliest block this transaction can be mined
     pub lock_height: u64,
     /// This is clacks info
-    pub  clacks_commitments : Option<[u8;32]>,
+    pub clacks_commitments: Option<[u8; 32]>,
 }
 
 /// Convenience function that calculates the challenge for the Schnorr signatures
@@ -111,9 +111,8 @@ pub fn build_challenge(sum_public_nonces: &PublicKey, metadata: &TransactionMeta
         .chain(sum_public_nonces.as_bytes())
         .chain(&u64::from(metadata.fee).to_le_bytes())
         .chain(&metadata.lock_height.to_le_bytes());
-        if metadata.clacks_commitments.is_some(){
-            challenge = challenge.chain(metadata.clacks_commitments.unwrap())
-        };
-        challenge.result()
-        .to_vec()
+    if metadata.clacks_commitments.is_some() {
+        challenge = challenge.chain(metadata.clacks_commitments.unwrap())
+    };
+    challenge.result().to_vec()
 }
