@@ -108,6 +108,15 @@ impl OutputFeatures {
             linked_commitment : None,
         }
     }
+
+    pub fn create_with_linked_commitment(commitment : &Commitment) -> OutputFeatures{
+        OutputFeatures {
+            flags: OutputFlags::LINKED_OUTPUT,
+            maturity: 0,
+            clacks_info: None,
+            linked_commitment : commitment.clone().to_vec(),
+        }
+    }
 }
 
 impl Default for OutputFeatures {
