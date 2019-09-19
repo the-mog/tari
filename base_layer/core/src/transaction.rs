@@ -114,7 +114,7 @@ impl OutputFeatures {
             flags: OutputFlags::LINKED_OUTPUT,
             maturity: 0,
             clacks_info: None,
-            linked_commitment : commitment.clone().to_vec(),
+            linked_commitment : Some(commitment.clone()),
         }
     }
 }
