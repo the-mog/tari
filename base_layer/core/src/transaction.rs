@@ -67,8 +67,8 @@ bitflags! {
 
 #[derive(Debug, Clone, Hash, PartialEq, Deserialize, Serialize, Eq)]
 pub struct ClacksInfo {
-    pub commitments_left: Vec<Commitment>,
-    pub commitments_out: Vec<Commitment>,
+    pub commitments_left: Vec<TransactionOutput>,
+    pub commitments_out: Vec<TransactionOutput>,
     pub kernels: Vec<TransactionKernel>,
 }
 
@@ -300,7 +300,7 @@ impl Hashable for TransactionInput {
 /// Output for a transaction, defining the new ownership of coins that are being transferred. The commitment is a
 /// blinded value for the output while the range proof guarantees the commitment includes a positive value without
 /// overflow and the ownership of the private key.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct TransactionOutput {
     /// Options for an output's structure or use
     pub features: OutputFeatures,
