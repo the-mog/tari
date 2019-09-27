@@ -139,13 +139,19 @@ impl AggregateBody {
     /// The reward is the amount of Tari rewarded for this block, this should be 0 for a transaction
     pub fn validate_internal_consistency(
         &self,
-        offset: &BlindingFactor,
+        offset: &Option<BlindingFactor>,
         reward: MicroTari,
         prover: &RangeProofService,
         factory: &CommitmentFactory,
     ) -> Result<(), TransactionError>
-    {
-        let total_offset = COMMITMENT_FACTORY.commit_value(&offset, reward.0);
+    {   
+        let total_offset = if offset.is_some()
+        {
+            Some(COMMITMENT_FACTORY.commit_value(&offset.clone().unwrap(), reward.0))
+        }
+        else {
+            None
+        };
         self.verify_kernel_signatures()?;
         self.validate_kernel_sum(total_offset, factory)?;
         self.validate_range_proofs(prover)
@@ -160,22 +166,34 @@ impl AggregateBody {
     }
 
     /// Calculate the sum of the kernels, taking into account the provided offset, and their constituent fees
-    fn sum_kernels(&self, offset: PedersenCommitment) -> KernelSum {
+    fn sum_kernels(&self, offset: Option<PedersenCommitment>) -> KernelSum {
         // Sum all kernel excesses and fees
-        self.kernels.iter().fold(
-            KernelSum {
-                fees: MicroTari(0),
-                sum: offset,
-            },
-            |acc, val| KernelSum {
-                fees: &acc.fees + &val.fee,
-                sum: &acc.sum + &val.excess,
-            },
-        )
+        // self.kernels.iter().fold(
+        //     KernelSum {
+        //         fees: MicroTari(0),
+        //         sum: offset,
+        //     },
+        //     |acc, val| KernelSum {
+        //         fees: &acc.fees + &val.fee,
+        //         sum: &acc.sum + &val.excess,
+        //     },
+        // )
+        let mut k_sum = KernelSum{
+            fees : self.kernels[0].fee,
+            sum : self.kernels[0].excess.clone(),
+        };
+        for i in 1..self.kernels.len(){
+            k_sum.fees = k_sum.fees + self.kernels[i].fee;
+            k_sum.sum = &k_sum.sum + &self.kernels[i].excess;
+        };
+        if offset.is_some(){
+            k_sum.sum = &k_sum.sum + &offset.unwrap();
+        };
+        k_sum
     }
 
     /// Confirm that the (sum of the outputs) - (sum of inputs) = Kernel excess
-    fn validate_kernel_sum(&self, offset: Commitment, factory: &CommitmentFactory) -> Result<(), TransactionError> {
+    fn validate_kernel_sum(&self, offset: Option<Commitment>, factory: &CommitmentFactory) -> Result<(), TransactionError> {
         let kernel_sum = self.sum_kernels(offset);
         let sum_io = self.sum_commitments(kernel_sum.fees.into(), factory);
 

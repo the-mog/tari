@@ -475,7 +475,7 @@ mod test {
             Err(e) => panic!("{:?}", e),
         }
         let tx = sender.get_transaction().unwrap();
-        assert_eq!(tx.offset, p.offset);
+        assert_eq!(tx.offset, Some(p.offset));
     }
 
     #[test]
@@ -522,7 +522,7 @@ mod test {
         };
         assert!(alice.is_finalized());
         let tx = alice.get_transaction().unwrap();
-        assert_eq!(tx.offset, a.offset);
+        assert_eq!(tx.offset, Some(a.offset));
         assert_eq!(tx.body.kernels[0].fee, fee + MicroTari(10)); // Check the twist above
         assert_eq!(tx.body.inputs.len(), 1);
         assert_eq!(tx.body.inputs[0], utxo);
@@ -589,7 +589,7 @@ mod test {
 
         assert!(alice.is_finalized());
         let tx = alice.get_transaction().unwrap();
-        assert_eq!(tx.offset, a.offset);
+        assert_eq!(tx.offset, Some(a.offset));
         assert_eq!(tx.body.kernels[0].fee, fee);
         assert_eq!(tx.body.inputs.len(), 1);
         assert_eq!(tx.body.inputs[0], utxo);

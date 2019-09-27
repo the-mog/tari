@@ -519,7 +519,7 @@ pub struct Transaction {
     /// This kernel offset will be accumulated when transactions are aggregated to prevent the "subset" problem where
     /// kernels can be linked to inputs and outputs by testing a series of subsets and see which produce valid
     /// transactions.
-    pub offset: BlindingFactor,
+    pub offset: Option<BlindingFactor>,
     /// The constituents of a transaction which has the same structure as the body of a block.
     pub body: AggregateBody,
 }
@@ -534,7 +534,7 @@ impl Transaction {
     ) -> Transaction
     {
         Transaction {
-            offset,
+            offset: Some(offset),
             body: AggregateBody::new(inputs, outputs, kernels),
         }
     }

@@ -66,7 +66,7 @@ impl Block {
         let offset = &self.header.total_kernel_offset;
         let total_coinbase = self.calculate_coinbase_and_fees(block_reward);
         self.body
-            .validate_internal_consistency(&offset, total_coinbase, &PROVER, &COMMITMENT_FACTORY)?;
+            .validate_internal_consistency(&Some(offset.clone()), total_coinbase, &PROVER, &COMMITMENT_FACTORY)?;
         self.check_stxo_rules()?;
         self.check_utxo_rules(rules)?;
         self.check_pow()

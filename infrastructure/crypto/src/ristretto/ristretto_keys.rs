@@ -146,6 +146,34 @@ impl<'a, 'b> Add<&'b RistrettoSecretKey> for &'a RistrettoSecretKey {
     }
 }
 
+
+impl<'a, 'b> Add<&'b Option<RistrettoSecretKey>> for &'a RistrettoSecretKey {
+    type Output = RistrettoSecretKey;
+
+    fn add(self, rhs: &'b Option<RistrettoSecretKey>) -> RistrettoSecretKey {
+        if  rhs.is_none(){
+            let k = &self.0;
+            return RistrettoSecretKey(*k)
+        }
+        let k = &self.0 + &rhs.clone().unwrap().0;
+        RistrettoSecretKey(k)
+    }
+}
+
+
+impl Add<Option<RistrettoSecretKey>> for RistrettoSecretKey {
+    type Output = RistrettoSecretKey;
+
+    fn add(self, rhs: Option<RistrettoSecretKey>) -> RistrettoSecretKey {
+        if  rhs.is_none(){
+            let k = self.0;
+            return RistrettoSecretKey(k)
+        }
+        let k = self.0 + rhs.unwrap().0;
+        RistrettoSecretKey(k)
+    }
+}
+
 impl<'a, 'b> Sub<&'b RistrettoSecretKey> for &'a RistrettoSecretKey {
     type Output = RistrettoSecretKey;
 
