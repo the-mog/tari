@@ -187,6 +187,7 @@ impl AggregateBody {
             k_sum.sum = &k_sum.sum + &self.kernels[i].excess;
         };
         if offset.is_some(){
+            dbg!("we have offset");
             k_sum.sum = &k_sum.sum + &offset.unwrap();
         };
         k_sum
