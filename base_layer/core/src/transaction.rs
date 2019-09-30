@@ -539,6 +539,18 @@ impl Transaction {
         }
     }
 
+    pub fn new_block(
+        inputs: Vec<TransactionInput>,
+        outputs: Vec<TransactionOutput>,
+        kernels: Vec<TransactionKernel>,
+    ) -> Transaction
+    {
+        Transaction {
+            offset: None,
+            body: AggregateBody::new(inputs, outputs, kernels),
+        }
+    }
+
     /// Validate this transaction by checking the following:
     /// 1. The sum of inputs, outputs and fees equal the (public excess value + offset)
     /// 1. The signature signs the canonical message with the private excess
