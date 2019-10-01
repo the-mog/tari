@@ -183,6 +183,7 @@ impl AggregateBody {
             sum : self.kernels[0].excess.clone(),
         };
         for i in 1..self.kernels.len(){
+            dbg!("more than one kernel");
             k_sum.fees = k_sum.fees + self.kernels[i].fee;
             k_sum.sum = &k_sum.sum + &self.kernels[i].excess;
         };
@@ -196,6 +197,7 @@ impl AggregateBody {
     /// Confirm that the (sum of the outputs) - (sum of inputs) = Kernel excess
     fn validate_kernel_sum(&self, offset: Option<Commitment>, factory: &CommitmentFactory) -> Result<(), TransactionError> {
         let kernel_sum = self.sum_kernels(offset);
+        dbg!(&kernel_sum.fees, &kernel_sum.sum);
         let sum_io = self.sum_commitments(kernel_sum.fees.into(), factory);
 
         if kernel_sum.sum != sum_io {
