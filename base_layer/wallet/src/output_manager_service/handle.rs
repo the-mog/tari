@@ -55,7 +55,7 @@ pub enum OutputManagerRequest {
     GetUnspentOutputs,
     GetInvalidOutputs,
     GetSeedWords,
-    SetBaseNodePublicKey(CommsPublicKey),
+    AddBaseNodePublicKey(CommsPublicKey),
     SyncWithBaseNode,
 }
 
@@ -100,7 +100,7 @@ pub enum OutputManagerResponse {
     UnspentOutputs(Vec<UnblindedOutput>),
     InvalidOutputs(Vec<UnblindedOutput>),
     SeedWords(Vec<String>),
-    BaseNodePublicKeySet,
+    BaseNodePublicKeyAdded,
     StartedBaseNodeSync(u64),
 }
 

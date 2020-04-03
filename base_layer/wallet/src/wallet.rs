@@ -172,7 +172,7 @@ where
         let mut transaction_service_handle = handles
             .get_handle::<TransactionServiceHandle>()
             .expect("Could not get Transaction Service Handle");
-        let liveness_handle = handles
+        let mut liveness_handle = handles
             .get_handle::<LivenessHandle>()
             .expect("Could not get Liveness Service Handle");
         let contacts_handle = handles
@@ -180,8 +180,7 @@ where
             .expect("Could not get Contacts Service Handle");
 
         for p in base_node_peers {
-            runtime.block_on(transaction_service_handle.set_base_node_public_key(p.public_key.clone()))?;
-            runtime.block_on(output_manager_handle.set_base_node_public_key(p.public_key.clone()))?;
+            runtime.block_on(liveness_handle.add_node_id(p.node_id.clone())?);
         }
 
         Ok(Wallet {
@@ -208,9 +207,9 @@ where
         self.runtime.block_on(self.comms.shutdown());
     }
 
-    /// This function will set the base_node that the wallet uses to broadcast transactions and monitor the blockchain
-    /// state
-    pub fn set_base_node_peer(&mut self, public_key: CommsPublicKey, net_address: String) -> Result<(), WalletError> {
+    /// This function will add a base_node to the collection that the wallet uses to broadcast transactions and monitor
+    /// the blockchain state
+    pub fn add_base_node_peer(&mut self, public_key: CommsPublicKey, net_address: String) -> Result<(), WalletError> {
         let address = net_address.parse::<Multiaddr>()?;
         let peer = Peer::new(
             public_key.clone(),
@@ -221,21 +220,28 @@ where
             &[],
         );
 
+        self.runtime.block_on(self.db.save_peer(peer.clone()))?;
+
+        self.runtime
+            .block_on(self.comms.peer_manager().add_peer(peer.clone()))?;
+
+        self.runtime
+            .block_on(self.liveness_service.add_node_id(peer.node_id.clone()))?;
+
+        Ok(())
+    }
+
+    /// Clear all base node peers
+    pub fn clear_base_node_peers(&mut self) -> Result<(), WalletError> {
         let existing_peers = self.runtime.block_on(self.db.get_peers())?;
         // Remove any peers in db to only persist a single peer at a time.
         for p in existing_peers {
             let _ = self.runtime.block_on(self.db.remove_peer(p.public_key.clone()))?;
         }
-        self.runtime.block_on(self.db.save_peer(peer.clone()))?;
 
-        self.runtime
-            .block_on(self.comms.peer_manager().add_peer(peer.clone()))?;
-        self.runtime.block_on(
-            self.transaction_service
-                .set_base_node_public_key(peer.public_key.clone()),
-        )?;
-        self.runtime
-            .block_on(self.output_manager_service.set_base_node_public_key(peer.public_key))?;
+        // CLEAR Tx Service
+        // self.runtime.block_on(tx)
+        // Clear OMS
 
         Ok(())
     }

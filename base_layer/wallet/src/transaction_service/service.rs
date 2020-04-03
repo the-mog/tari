@@ -104,6 +104,7 @@ use crate::{
     },
     util::futures::StateDelay,
 };
+use tari_p2p::services::liveness::LivenessHandle;
 
 const LOG_TARGET: &str = "wallet::transaction_service::service";
 
@@ -138,6 +139,7 @@ where TBackend: TransactionBackend + Clone + 'static
     outbound_message_service: OutboundMessageRequester,
     message_event_receiver: Option<MessagingEventReceiver>,
     output_manager_service: OutputManagerHandle,
+    liveness_service: LivenessHandle,
     transaction_stream: Option<TTxStream>,
     transaction_reply_stream: Option<TTxReplyStream>,
     transaction_finalized_stream: Option<TTxFinalizedStream>,
@@ -149,7 +151,6 @@ where TBackend: TransactionBackend + Clone + 'static
     event_publisher: Publisher<TransactionEvent>,
     node_identity: Arc<NodeIdentity>,
     factories: CryptoFactories,
-    base_node_public_key: Option<CommsPublicKey>,
     pending_outbound_message_results: HashMap<MessageTag, OutboundTransaction>,
     pending_transaction_mined_queries: HashMap<TxId, TransactionMinedRequestResult>,
 }
@@ -179,6 +180,7 @@ where
         base_node_response_stream: BNResponseStream,
         output_manager_service: OutputManagerHandle,
         outbound_message_service: OutboundMessageRequester,
+        liveness_service: LivenessService,
         message_event_receiver: MessagingEventReceiver,
         event_publisher: Publisher<TransactionEvent>,
         node_identity: Arc<NodeIdentity>,
@@ -191,6 +193,7 @@ where
             outbound_message_service,
             message_event_receiver: Some(message_event_receiver),
             output_manager_service,
+            liveness_service,
             transaction_stream: Some(transaction_stream),
             transaction_reply_stream: Some(transaction_reply_stream),
             transaction_finalized_stream: Some(transaction_finalized_stream),
@@ -200,7 +203,6 @@ where
             event_publisher,
             node_identity,
             factories,
-            base_node_public_key: None,
             pending_outbound_message_results: HashMap::new(),
             pending_transaction_mined_queries: HashMap::new(),
         }

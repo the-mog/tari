@@ -274,6 +274,11 @@ where
                 .state
                 .get_node_id_stats(&node_id)
                 .map(LivenessResponse::NodeIdStats),
+            ClearNodeIds => {
+                self.state.clear_node_ids();
+                Ok(LivenessResponse::NodeIdsCleared)
+            },
+            GetBestMonitoredNodeId => Ok(LivenessResponse::BestMonitoredNodeId(self.state.get_best_node_id()?)),
         }
     }
 

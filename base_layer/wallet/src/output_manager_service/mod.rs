@@ -35,7 +35,10 @@ use tari_core::{base_node::proto::base_node as BaseNodeProto, transactions::type
 use tari_p2p::{
     comms_connector::PeerMessage,
     domain_message::DomainMessage,
-    services::utils::{map_decode, ok_or_skip_result},
+    services::{
+        liveness::LivenessHandle,
+        utils::{map_decode, ok_or_skip_result},
+    },
     tari_message::TariMessageType,
 };
 use tari_pubsub::TopicSubscriptionFactory;
@@ -130,9 +133,14 @@ where T: OutputManagerBackend + 'static
                 .get_handle::<OutboundMessageRequester>()
                 .expect("OMS handle required for Output Manager Service");
 
+            let liveness_service = handles
+                .get_handle::<LivenessHandle>()
+                .expect("LivenessHandle handle required for Output Manager Service");
+
             let service = OutputManagerService::new(
                 config,
                 outbound_message_service,
+                liveness_service,
                 receiver,
                 base_node_response_stream,
                 OutputManagerDatabase::new(backend),

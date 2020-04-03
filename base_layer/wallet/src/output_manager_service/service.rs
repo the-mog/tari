@@ -62,7 +62,7 @@ use tari_key_manager::{
     key_manager::KeyManager,
     mnemonic::{from_secret_key, MnemonicLanguage},
 };
-use tari_p2p::{domain_message::DomainMessage, tari_message::TariMessageType};
+use tari_p2p::{domain_message::DomainMessage, services::liveness::LivenessHandle, tari_message::TariMessageType};
 use tari_service_framework::reply_channel;
 
 const LOG_TARGET: &str = "wallet::output_manager_service";
@@ -78,11 +78,11 @@ where TBackend: OutputManagerBackend + 'static
     key_manager: Mutex<KeyManager<PrivateKey, KeyDigest>>,
     db: OutputManagerDatabase<TBackend>,
     outbound_message_service: OutboundMessageRequester,
+    liveness_service: LivenessHandle,
     request_stream:
         Option<reply_channel::Receiver<OutputManagerRequest, Result<OutputManagerResponse, OutputManagerError>>>,
     base_node_response_stream: Option<BNResponseStream>,
     factories: CryptoFactories,
-    base_node_public_key: Option<CommsPublicKey>,
     pending_utxo_query_keys: HashMap<u64, Vec<Vec<u8>>>,
     event_publisher: Publisher<OutputManagerEvent>,
 }
@@ -95,6 +95,7 @@ where
     pub async fn new(
         config: OutputManagerServiceConfig,
         outbound_message_service: OutboundMessageRequester,
+        liveness_service: LivenessHandle,
         request_stream: reply_channel::Receiver<
             OutputManagerRequest,
             Result<OutputManagerResponse, OutputManagerError>,
@@ -126,6 +127,7 @@ where
         Ok(OutputManagerService {
             config,
             outbound_message_service,
+            liveness_service,
             key_manager: Mutex::new(KeyManager::<PrivateKey, KeyDigest>::from(
                 key_manager_state.master_seed,
                 key_manager_state.branch_seed,
@@ -135,7 +137,6 @@ where
             request_stream: Some(request_stream),
             base_node_response_stream: Some(base_node_response_stream),
             factories,
-            base_node_public_key: None,
             pending_utxo_query_keys: HashMap::new(),
             event_publisher,
         })

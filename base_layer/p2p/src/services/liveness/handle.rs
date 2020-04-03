@@ -47,6 +47,10 @@ pub enum LivenessRequest {
     AddNodeId(NodeId),
     /// Get stats for a monitored NodeId
     GetNodeIdStats(NodeId),
+    /// Clear all monitored NodeIds
+    ClearNodeIds,
+    /// Get the monitored node that has the been Liveness stats if a NodeId has been added to be monitored
+    GetBestMonitoredNodeId,
 }
 
 /// Response type for `LivenessService`
@@ -62,6 +66,8 @@ pub enum LivenessResponse {
     NumActiveNeighbours(usize),
     NodeIdAdded,
     NodeIdStats(NodeStats),
+    NodeIdsCleared,
+    BestMonitoredNodeId(Option<NodeId>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -173,6 +179,14 @@ impl LivenessHandle {
     pub async fn get_node_id_stats(&mut self, node_id: NodeId) -> Result<NodeStats, LivenessError> {
         match self.handle.call(LivenessRequest::GetNodeIdStats(node_id)).await?? {
             LivenessResponse::NodeIdStats(n) => Ok(n),
+            _ => Err(LivenessError::UnexpectedApiResponse),
+        }
+    }
+
+    /// Clear all NodeIds that are being monitored
+    pub async fn clear_node_ids(&mut self) -> Result<(), LivenessError> {
+        match self.handle.call(LivenessRequest::ClearNodeIds).await?? {
+            LivenessResponse::NodeIdsCleared => Ok(()),
             _ => Err(LivenessError::UnexpectedApiResponse),
         }
     }
