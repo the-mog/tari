@@ -40,12 +40,19 @@
 use crate::{
     base_node::{comms_interface::CommsInterfaceError, LocalNodeCommsInterface},
     blocks::{BlockBuilder, NewBlockHeaderTemplate},
-    proof_of_work::{Difficulty, PowError, ProofOfWork},
+    proof_of_work::{Difficulty, MoneroData, PowError, ProofOfWork},
     transactions::types::{BlindingFactor, HashDigest},
 };
+use bitflags::_core::ptr::hash;
 use chrono::{DateTime, Utc};
 use derive_error::Error;
 use digest::Digest;
+#[cfg(feature = "monero_merge_mining")]
+use monero::blockdata::{block::BlockHeader as MoneroBlockHeader, Transaction as MoneroTransaction};
+use monero::{
+    consensus::encode::VarInt,
+    cryptonote::hash::{Hash, Hashable as MoneroHashable},
+};
 use serde::{
     de::{self, Visitor},
     Deserialize,
@@ -54,10 +61,12 @@ use serde::{
     Serializer,
 };
 use std::{
+    convert::TryFrom,
     fmt,
     fmt::{Display, Error, Formatter},
 };
 use tari_crypto::tari_utilities::{epoch_time::EpochTime, hex::Hex, ByteArray, Hashable};
+use tari_mmr::{MerkleMountainRange, MerkleProof};
 
 pub const BLOCK_HASH_LENGTH: usize = 32;
 pub type BlockHash = Vec<u8>;
@@ -325,26 +334,51 @@ mod test {
     use tari_crypto::tari_utilities::Hashable;
     #[test]
     fn from_previous() {
-        let mut h1 = crate::proof_of_work::blake_test::get_header();
+        let mut h1: BlockHeader;
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            h1 = crate::proof_of_work::blake_test::get_header();
+        }
+        #[cfg(feature = "monero_merge_mining")]
+        {
+            h1 = crate::proof_of_work::monero_test::get_header();
+        }
         h1.nonce = 7600; // Achieved difficulty is 18,138;
         assert_eq!(h1.height, 0, "Default block height");
         let hash1 = h1.hash();
         let diff1 = h1.achieved_difficulty();
-        assert_eq!(diff1, 18138.into());
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            assert_eq!(diff1, 18138.into());
+        }
         let h2 = BlockHeader::from_previous(&h1);
         assert_eq!(h2.height, h1.height + 1, "Incrementing block height");
         assert!(h2.timestamp > h1.timestamp, "Timestamp");
         assert_eq!(h2.prev_hash, hash1, "Previous hash");
-        // default pow is blake, so monero diff should stay the same
-        assert_eq!(
-            h2.pow.accumulated_monero_difficulty, h1.pow.accumulated_monero_difficulty,
-            "Monero difficulty"
-        );
-        assert_eq!(
-            h2.pow.accumulated_blake_difficulty,
-            h1.pow.accumulated_blake_difficulty + diff1,
-            "Blake difficulty"
-        );
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            assert_eq!(
+                h2.pow.accumulated_monero_difficulty, h1.pow.accumulated_monero_difficulty,
+                "Monero difficulty"
+            );
+            assert_eq!(
+                h2.pow.accumulated_blake_difficulty,
+                h1.pow.accumulated_blake_difficulty + diff1,
+                "Blake difficulty"
+            );
+        }
+        #[cfg(feature = "monero_merge_mining")]
+        {
+            assert_eq!(
+                h2.pow.accumulated_monero_difficulty,
+                h1.pow.accumulated_monero_difficulty + diff1,
+                "Monero difficulty"
+            );
+            assert_eq!(
+                h2.pow.accumulated_blake_difficulty, h1.pow.accumulated_blake_difficulty,
+                "Monero difficulty"
+            );
+        }
     }
 
     #[test]

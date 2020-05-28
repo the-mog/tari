@@ -81,12 +81,25 @@ pub struct ProofOfWork {
 
 impl Default for ProofOfWork {
     fn default() -> Self {
-        Self {
-            accumulated_monero_difficulty: Difficulty::default(),
-            accumulated_blake_difficulty: Difficulty::default(),
-            target_difficulty: Difficulty::default(),
-            pow_algo: PowAlgorithm::Blake,
-            pow_data: vec![],
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            Self {
+                accumulated_monero_difficulty: Difficulty::default(),
+                accumulated_blake_difficulty: Difficulty::default(),
+                target_difficulty: Difficulty::default(),
+                pow_algo: PowAlgorithm::Blake,
+                pow_data: vec![],
+            }
+        }
+        #[cfg(feature = "monero_merge_mining")]
+        {
+            Self {
+                accumulated_monero_difficulty: Difficulty::default(),
+                accumulated_blake_difficulty: Difficulty::default(),
+                target_difficulty: Difficulty::default(),
+                pow_algo: PowAlgorithm::Monero,
+                pow_data: vec![],
+            }
         }
     }
 }
@@ -234,11 +247,22 @@ mod test {
     #[test]
     fn display() {
         let pow = ProofOfWork::default();
-        assert_eq!(
-            &format!("{}", pow),
-            "Mining algorithm: Blake, Target difficulty: 1\nTotal accumulated difficulty:\nMonero=1, Blake=1\nPow \
-             data: \n"
-        );
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            assert_eq!(
+                &format!("{}", pow),
+                "Mining algorithm: Blake, Target difficulty: 1\nTotal accumulated difficulty:\nMonero=1, Blake=1\nPow \
+                 data: \n"
+            );
+        }
+        #[cfg(feature = "monero_merge_mining")]
+        {
+            assert_eq!(
+                &format!("{}", pow),
+                "Mining algorithm: Monero, Target difficulty: 1\nTotal accumulated difficulty:\nMonero=1, \
+                 Blake=1\nPow data: \n"
+            );
+        }
     }
 
     #[test]
@@ -271,7 +295,15 @@ mod test {
 
     #[test]
     fn add_difficulty() {
-        let mut pow = ProofOfWork::new(PowAlgorithm::Monero);
+        let mut pow: ProofOfWork;
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            pow = ProofOfWork::new(PowAlgorithm::Blake);
+        }
+        #[cfg(feature = "monero_merge_mining")]
+        {
+            pow = ProofOfWork::new(PowAlgorithm::Monero);
+        }
         pow.accumulated_blake_difficulty = Difficulty::from(42);
         pow.accumulated_monero_difficulty = Difficulty::from(420);
         let mut pow2 = ProofOfWork::default();

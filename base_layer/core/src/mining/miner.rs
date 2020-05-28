@@ -295,18 +295,36 @@ impl Miner {
     /// function, temp use genesis block as template
     pub async fn get_block_template(&mut self) -> Result<NewBlockTemplate, MinerError> {
         trace!(target: LOG_TARGET, "Requesting new block template from node.");
-        Ok(self
-            .node_interface
-            .get_new_block_template(PowAlgorithm::Blake)
-            .await
-            .or_else(|e| {
-                error!(
-                    target: LOG_TARGET,
-                    "Could not get a new block template from the base node. {:?}.", e
-                );
-                Err(e)
-            })
-            .map_err(|e| MinerError::CommunicationError(e.to_string()))?)
+        #[cfg(not(feature = "monero_merge_mining"))]
+        {
+            Ok(self
+                .node_interface
+                .get_new_block_template(PowAlgorithm::Blake)
+                .await
+                .or_else(|e| {
+                    error!(
+                        target: LOG_TARGET,
+                        "Could not get a new block template from the base node. {:?}.", e
+                    );
+                    Err(e)
+                })
+                .map_err(|e| MinerError::CommunicationError(e.to_string()))?)
+        }
+        #[cfg(feature = "monero_merge_mining")]
+        {
+            Ok(self
+                .node_interface
+                .get_new_block_template(PowAlgorithm::Monero)
+                .await
+                .or_else(|e| {
+                    error!(
+                        target: LOG_TARGET,
+                        "Could not get a new block template from the base node. {:?}.", e
+                    );
+                    Err(e)
+                })
+                .map_err(|e| MinerError::CommunicationError(e.to_string()))?)
+        }
     }
 
     /// function, temp use genesis block as template

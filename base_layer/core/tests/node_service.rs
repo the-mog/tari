@@ -765,24 +765,49 @@ fn local_get_new_block_template_and_get_new_block() {
     assert!(node.mempool.insert(txs[0].clone()).is_ok());
     assert!(node.mempool.insert(txs[1].clone()).is_ok());
 
-    runtime.block_on(async {
-        let block_template = node
-            .local_nci
-            .get_new_block_template(PowAlgorithm::Blake)
-            .await
-            .unwrap();
-        assert_eq!(block_template.header.height, 1);
-        assert_eq!(block_template.body.kernels().len(), 2);
+    #[cfg(not(feature = "monero_merge_mining"))]
+    {
+        runtime.block_on(async {
+            let block_template = node
+                .local_nci
+                .get_new_block_template(PowAlgorithm::Blake)
+                .await
+                .unwrap();
+            assert_eq!(block_template.header.height, 1);
+            assert_eq!(block_template.body.kernels().len(), 2);
 
-        let mut block = node.local_nci.get_new_block(block_template.clone()).await.unwrap();
-        block.header.pow.accumulated_blake_difficulty = Difficulty::from(100);
-        assert_eq!(block.header.height, 1);
-        assert_eq!(block.body, block_template.body);
+            let mut block = node.local_nci.get_new_block(block_template.clone()).await.unwrap();
+            block.header.pow.accumulated_blake_difficulty = Difficulty::from(100);
+            assert_eq!(block.header.height, 1);
+            assert_eq!(block.body, block_template.body);
 
-        assert!(node.blockchain_db.add_block(block.clone()).is_ok());
+            assert!(node.blockchain_db.add_block(block.clone()).is_ok());
 
-        node.comms.shutdown().await;
-    });
+            node.comms.shutdown().await;
+        });
+    }
+
+    #[cfg(feature = "monero_merge_mining")]
+    {
+        runtime.block_on(async {
+            let block_template = node
+                .local_nci
+                .get_new_block_template(PowAlgorithm::Monero)
+                .await
+                .unwrap();
+            assert_eq!(block_template.header.height, 1);
+            assert_eq!(block_template.body.kernels().len(), 2);
+
+            let mut block = node.local_nci.get_new_block(block_template.clone()).await.unwrap();
+            block.header.pow.accumulated_monero_difficulty = Difficulty::from(100);
+            assert_eq!(block.header.height, 1);
+            assert_eq!(block.body, block_template.body);
+
+            assert!(node.blockchain_db.add_block(block.clone()).is_ok());
+
+            node.comms.shutdown().await;
+        });
+    }
 }
 
 #[test]

@@ -76,6 +76,7 @@ pub mod test {
         header
     }
 
+    #[cfg(not(feature = "monero_merge_mining"))]
     #[test]
     fn validate_max_target() {
         let mut header = get_header();
@@ -83,6 +84,7 @@ pub mod test {
         assert_eq!(blake_difficulty(&header), Difficulty::from(5));
     }
 
+    #[cfg(not(feature = "monero_merge_mining"))]
     #[test]
     fn difficulty_1000() {
         let mut header = get_header();
@@ -95,6 +97,7 @@ pub mod test {
         );
     }
 
+    #[cfg(not(feature = "monero_merge_mining"))]
     #[test]
     fn difficulty_1mil() {
         let mut header = get_header();

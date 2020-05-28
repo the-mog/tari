@@ -33,12 +33,15 @@ mod target_difficulty;
 #[cfg(test)]
 pub use blake_pow::test as blake_test;
 
+#[cfg(test)]
+pub use monero_rx::test as monero_test;
+
 pub mod lwma_diff;
 
 pub use blake_pow::{blake_difficulty, blake_difficulty_with_hash};
 pub use difficulty::{Difficulty, DifficultyAdjustment};
 pub use error::{DifficultyAdjustmentError, PowError};
 pub use median_timestamp::get_median_timestamp;
-pub use monero_rx::monero_difficulty;
+pub use monero_rx::{monero_difficulty, monero_difficulty_with_hash, MoneroData};
 pub use proof_of_work::{PowAlgorithm, ProofOfWork};
 pub use target_difficulty::get_target_difficulty;
