@@ -35,7 +35,8 @@ use monero::{
 #[cfg(feature = "monero_merge_mining")]
 use randomx_rs::{RandomXCache, RandomXDataset, RandomXError, RandomXFlag, RandomXVM};
 use serde::{Deserialize, Serialize};
-use std::{hash::Hasher, time::UNIX_EPOCH};
+use crate::proof_of_work::monero_merkle_tree::MoneroMerkleTree;
+use crate::proof_of_work::monero_merkle_proof::MoneroMerkleProof;
 
 const MAX_TARGET: U256 = U256::MAX;
 const SEEDHASH_EPOCH: u64 = 2048;
@@ -69,7 +70,7 @@ pub struct MoneroData {
     // transaction root
     pub transaction_root: Vec<u8>,
     // Transaction proof of work.
-    pub merkle_proof: Vec<Vec<u8>>,
+    pub merkle_proof: MoneroMerkleProof,
     // Coinbase tx from Monero
     pub coinbase_tx: MoneroTransaction,
 }
@@ -78,12 +79,23 @@ fn check_randomx_key(key: Vec<u8>) -> Result<(), MergeMineError> {
     Ok(())
 }
 
-fn verify_tx_in_root(
+fn verify_merkle_root(
     transaction_root: Vec<u8>,
-    coinbase_tx_hash: Vec<u8>,
-    mut merkle_proof: Vec<Vec<u8>>,
+    coinbase_tx: Vec<u8>,
+    merkle_proof: MoneroMerkleProof,
 ) -> Result<(), MergeMineError>
 {
+    println!("{:?}", merkle_proof);
+    if !merkle_proof.validate(&transaction_root)
+    {
+        return Err(MergeMineError::ValidationError);
+    }
+
+    if !merkle_proof.validate_value(&coinbase_tx)
+    {
+        return Err(MergeMineError::ValidationError);
+    }
+
     Ok(())
 }
 
@@ -125,21 +137,27 @@ impl MoneroData {
         let tx_hash = monero_tx.hash().0;
 
         //build merkle tree
+        let mut tree = MoneroMerkleTree::new();
+        tree.push(tx_hash.to_vec());
         //generate proof
-
-        let vec_proof = Vec::new();
+        let proof = tree.get_proof(tx_hash.to_vec());
+        let root_hash = tree.root_hash().unwrap();
+        println!("Checking Proof");
+        assert_eq!(proof.validate(root_hash),true);
+        println!("Proof Checked");
 
         let mut monero_data = MoneroData {
             header: monero_header,
             key: Hash::null_hash().0.to_vec(),
             count: 1,
-            transaction_root: Vec::new(), // merkle_tree.root(),
-            merkle_proof: vec_proof,     // MoneroProof(merkle_proof),
+            transaction_root: root_hash.to_vec(),
+            merkle_proof: proof,
             coinbase_tx: monero_tx,
         };
 
         monero_data.adjust_mm_tag(&tari_header);
         tari_header.pow.pow_data = bincode::serialize(&monero_data).unwrap();
+        tari_header.pow.target_difficulty = Difficulty::from(1);
     }
 
     pub fn adjust_mm_tag(&mut self, tari_header: &BlockHeader) {
@@ -211,11 +229,10 @@ fn monero_difficulty_calculation(header: &BlockHeader) -> Result<(Difficulty, Ve
         let scalar = U256::from_big_endian(&hash); // Big endian so the hash has leading zeroes
         let result = MAX_TARGET / scalar;
         let difficulty = result.low_u64().into();
-         println!("Checking difficulty");
+         println!("Checking difficulty {:?} against target {:?}",difficulty,header.pow.target_difficulty);
          if difficulty == header.pow.target_difficulty {
            return Err(MergeMineError::ValidationError);
         }
-        println!("{:?}", difficulty);
         Ok((difficulty, hash))
     }
     #[cfg(not(feature = "monero_merge_mining"))]
@@ -265,16 +282,16 @@ fn verify_header(header: &BlockHeader, monero_data: &MoneroData) -> Result<(), M
         return Err(MergeMineError::ValidationError);
     }
     println!("Verifying proof of work");
-    if verify_tx_in_root(
+    if verify_merkle_root(
         monero_data.transaction_root.to_vec(),
-        Default::default(),
-        // monero_data.coinbase_tx.hash().0,
-        monero_data.merkle_proof.to_vec(),
+        monero_data.coinbase_tx.hash().0.to_vec(),
+        monero_data.merkle_proof.clone(),
     )
     .is_err()
     {
         return Err(MergeMineError::ValidationError);
     }
+    println!("Proof of work verified");
     Ok(())
 }
 
@@ -294,6 +311,7 @@ pub mod test {
         let mut header = BlockHeader::new(0);
         header.timestamp = DateTime::<Utc>::from_utc(NaiveDate::from_ymd(2000, 1, 1).and_hms(1, 1, 1), Utc).into();
         MoneroData::generate(&mut header);
+        let mut monero_data = MoneroData::new(&header).unwrap();
         monero_data.header.timestamp = VarInt(header.timestamp.as_u64());
         monero_data.header.nonce = u32::try_from(header.nonce).unwrap();
         monero_data.adjust_mm_tag(&header);
@@ -307,14 +325,15 @@ pub mod test {
         let mut header = get_header();
         header.nonce = 2606;
         MoneroData::generate(&mut header);
+        let mut monero_data = MoneroData::new(&header).unwrap();
         monero_data.header.nonce = u32::try_from(header.nonce).unwrap();
         monero_data.adjust_mm_tag(&header);
         header.pow.pow_data = bincode::serialize(&monero_data).unwrap();
         let (diff, hash) = monero_difficulty_with_hash(&header);
-        assert_eq!(diff, Difficulty::from(2));
+        assert_eq!(diff, Difficulty::from(1));
         assert_eq!(
             hash.to_hex(),
-            "7b817c031dde32574108af570cc0620688d2a1a97ad21b27a3a61876dd48ce9d"
+            "0000000000000000000000000000000000000000000000000000000000000000"
         );
     }
 }
