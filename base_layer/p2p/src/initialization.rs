@@ -33,7 +33,7 @@ use tari_comms::{
     peer_manager::{NodeIdentity, Peer, PeerManagerError},
     pipeline,
     pipeline::SinkService,
-    protocol::ProtocolExtensions,
+    protocol::{rpc::RpcServer, ProtocolExtensions},
     tor,
     transports::{MemoryTransport, SocksTransport, TcpWithTorTransport, Transport},
     utils::cidr::parse_cidrs,
@@ -338,6 +338,7 @@ where
     let dht_outbound_layer = dht.outbound_middleware_layer();
 
     let comms = comms
+        .add_rpc(RpcServer::new().add_service(dht.rpc_service()))
         .with_messaging_pipeline(
             pipeline::Builder::new()
                 .outbound_buffer_size(config.outbound_buffer_size)

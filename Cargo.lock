@@ -3767,6 +3767,7 @@ dependencies = [
  "serde_repr",
  "tari_common",
  "tari_comms",
+ "tari_comms_rpc_macros",
  "tari_crypto",
  "tari_shutdown",
  "tari_storage",
@@ -3780,6 +3781,21 @@ dependencies = [
  "tower",
  "tower-test",
  "ttl_cache",
+]
+
+[[package]]
+name = "tari_comms_rpc_macros"
+version = "0.1.0"
+dependencies = [
+ "futures 0.3.5",
+ "prost",
+ "quote 1.0.7",
+ "syn 1.0.38",
+ "tari_comms",
+ "tari_test_utils",
+ "tokio",
+ "tokio-macros",
+ "tower-service",
 ]
 
 [[package]]
