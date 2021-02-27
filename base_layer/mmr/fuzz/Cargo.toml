@@ -1,0 +1,69 @@
+
+[package]
+name = "tari_mmr-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[features] 
+default = ["native_bitmap"]
+native_bitmap = ["croaring"]
+
+[dependencies]
+libfuzzer-sys = "0.3"
+digest = "0.9.0"
+sha2 = "0.9.3"
+croaring =  { version = "=0.4.5", optional = true  }
+blake2 = "0.8.0"
+rand="0.7.0"
+#tari_crypto = "^0.8"
+tari_crypto = { version = "^0.3" }
+
+[dependencies.tari_mmr]
+path = ".."
+features = ["arbitrary"]
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+
+[[bin]]
+name = "commons_all"
+path = "fuzz_targets/commons.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "mutable_mmr"
+path = "fuzz_targets/mutable_mmr.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "merkle_moutain_range"
+path = "fuzz_targets/merkle_moutain_range.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "merkle_proof"
+path = "fuzz_targets/merkle_proof.rs"
+test = false
+doc = false
+
+#@[[bin]]
+#name = "mutable_mmr_leaf_nodes"
+#path = "fuzz_targets/mutable_mmr_leaf_nodes.rs"
+#test = false
+#doc = false
+
+[[bin]]
+name = "functions_all"
+path = "fuzz_targets/functions.rs"
+test = false
+doc = false
