@@ -141,10 +141,10 @@
 pub type Hash = Vec<u8>;
 pub type HashSlice = [u8];
 
-mod backend;
-mod mem_backend_vec;
-mod merkle_mountain_range;
-mod merkle_proof;
+pub mod backend;
+pub mod mem_backend_vec;
+pub mod merkle_mountain_range;
+pub mod merkle_proof;
 mod serde_support;
 
 // Less commonly used exports
@@ -173,10 +173,10 @@ macro_rules! if_native_bitmap {
 }
 
 if_native_bitmap! {
-    mod merkle_checkpoint;
-    mod mmr_cache;
-    mod mutable_mmr;
-    mod mutable_mmr_leaf_nodes;
+    pub mod merkle_checkpoint;
+    pub mod mmr_cache;
+    pub mod mutable_mmr;
+    pub mod mutable_mmr_leaf_nodes;
     pub mod functions;
 
     /// A Merkle checkpoint contains the set of hash additions and deletion indices.

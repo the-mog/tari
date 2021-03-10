@@ -20,6 +20,7 @@ log = "0.4"
 serde = { version = "1.0.97", features = ["derive"] }
 croaring =  { version = "=0.4.5", optional = true }
 criterion = { version="0.2", optional = true }
+arbitrary = { version = "0.4.3", features = ["derive"], optional = true }
 
 [dev-dependencies]
 rand="0.7.0"
