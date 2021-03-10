@@ -1,0 +1,38 @@
+
+[package]
+name = "tari_core-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.3"
+
+[dependencies.tari_core]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fee"
+path = "fuzz_targets/fee.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "trx_types"
+path = "fuzz_targets/trx_types.rs"
+test = false
+doc = false
